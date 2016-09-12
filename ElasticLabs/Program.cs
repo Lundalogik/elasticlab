@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using Nest;
 using Newtonsoft.Json;
 
@@ -13,23 +11,31 @@ namespace ElasticLabs
             var client = new ElasticClient(new Uri("http://192.168.99.100:9200"));
 
             var searchResponse = client.YouKnowForSearch();
-            WriteResults(searchResponse.Documents);
+            WriteResults(searchResponse, nameof(YouKnowForSearch));
 
             searchResponse = client.SearchInAnIndex();
-            WriteResults(searchResponse.Documents);
+            WriteResults(searchResponse, nameof(SearchInAnIndex));
 
             searchResponse = client.SearchInMultipleIndices();
-            WriteResults(searchResponse.Documents);
+            WriteResults(searchResponse, nameof(SearchInMultipleIndices));
 
             searchResponse = client.SearchForType();
-            WriteResults(searchResponse.Documents);
+            WriteResults(searchResponse, nameof(SearchForType));
 
+            searchResponse = client.FreetextSearch();
+            WriteResults(searchResponse, nameof(FreetextSearch));
+
+            searchResponse = client.TermQuery();
+            WriteResults(searchResponse, nameof(TermQuery));
+
+            searchResponse = client.CombineQueies();
+            WriteResults(searchResponse, nameof(CombineQueies));
         }
 
         private static ISearchResponse<SearchDocument> YouKnowForSearch(this IElasticClient client)
         {
             return client.Search<SearchDocument>(searchDescriptor => searchDescriptor.MatchAll());
-            
+
             // Can also be written more verbosely like this:
             /*
             var searchDescriptor = new SearchDescriptor<SearchDocument>();
@@ -45,7 +51,7 @@ namespace ElasticLabs
                     .MatchAll()
                     .Index("pase"));
         }
-        
+
         private static ISearchResponse<SearchDocument> SearchInMultipleIndices(this IElasticClient client)
         {
             return client.Search<SearchDocument>(
@@ -62,13 +68,51 @@ namespace ElasticLabs
                 .Type("Organization"));
         }
 
-
-
-        private static void WriteResults(IEnumerable<SearchDocument> documents)
+        private static ISearchResponse<SearchDocument> FreetextSearch(this IElasticClient client)
         {
-            Console.WriteLine(JsonConvert.SerializeObject(documents, Formatting.Indented));
+            return client.Search<SearchDocument>(s => s
+                .Query(q => q.Match(t => t.Field("tag").Query("some")))
+                .Index(Indices.Index("pase", "go1"))
+                .Type("Organization"));
+        }
+
+        private static ISearchResponse<SearchDocument> TermQuery(this IElasticClient client)
+        {
+            return client.Search<SearchDocument>(s => s
+                .Query(q => q.Term(t => t.Field("tag").Value("some tag")))
+                .Index(Indices.Index("pase", "go1"))
+                .Type("Organization"));
+        }
+
+        private static ISearchResponse<SearchDocument> CombineQueies(this IElasticClient client)
+        {
+            return client.Search<SearchDocument>(s => s
+                .Index(Indices.Index("pase", "go1"))
+                .Type("Organization")
+                .Query(q => q
+                    .Bool(b => b
+                        .Must(
+                            m => m.Term("tag", "some tag"),
+                            m => m.Match(match => match.Query("lund").Field("freetext")))
+                        .Filter(filter => filter
+                            .Bool(fb => fb
+                                .Should(
+                                    ss => ss.Term("applicationid", 102),
+                                    ss => ss.Term("applicationid", 0)))))));
+        }
+
+
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        private static void WriteResults(ISearchResponse<SearchDocument> response, string resultsFor)
+        {
+            Console.WriteLine($"Results for: {resultsFor}");
+            Console.WriteLine("First 10 hits:");
+            Console.WriteLine(JsonConvert.SerializeObject(response.Documents, Formatting.Indented));
+            Console.WriteLine($"Total count: {response.Total}");
             Console.WriteLine("==========================================================================");
             Console.WriteLine("Continue? (type 'q' to quit)");
+            Console.WriteLine();
             var key = Console.ReadKey();
 
             if (key.KeyChar == 'q')
@@ -78,13 +122,12 @@ namespace ElasticLabs
         }
     }
 
-    public class SearchDocument 
+    public class SearchDocument
     {
         [JsonProperty("heading")]
         public string Heading { get; set; }
 
         [JsonProperty("subheading")]
         public string SubHeading { get; set; }
-
     }
 }
