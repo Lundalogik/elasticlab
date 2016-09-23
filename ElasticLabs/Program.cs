@@ -22,14 +22,14 @@ namespace ElasticLabs
             searchResponse = client.SearchInMultipleIndices();
             WriteResults(searchResponse, nameof(SearchInMultipleIndices));
 
+            searchResponse = client.TermQuery();
+            WriteResults(searchResponse, nameof(TermQuery));
+
             searchResponse = client.FreetextSearch();
             WriteResults(searchResponse, nameof(FreetextSearch));
 
             searchResponse = client.FreetextSearchNGram();
             WriteResults(searchResponse, nameof(FreetextSearchNGram));
-
-            searchResponse = client.TermQuery();
-            WriteResults(searchResponse, nameof(TermQuery));
 
             searchResponse = client.CombineQueies();
             WriteResults(searchResponse, nameof(CombineQueies));
