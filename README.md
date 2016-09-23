@@ -11,4 +11,4 @@ We will be learning to work with ElasticSearch both with the rest api and with N
 ## [5. Term Query](https://github.com/Lundalogik/elasticlab/pull/6)
 ## [6. Freetext Search](https://github.com/Lundalogik/elasticlab/pull/7)
 ## [7. Combine Querys](https://github.com/Lundalogik/elasticlab/pull/8)
-## [8. Aggregations]
+## [8. Aggregations](https://github.com/Lundalogik/elasticlab)
