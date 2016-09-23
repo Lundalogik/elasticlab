@@ -121,6 +121,18 @@ namespace ElasticLabs
                                     ss => ss.Term("applicationid", 102),
                                     ss => ss.Term("applicationid", 0)))))));
         }
+        /*
+        POST /pase,go1/Organization/_search
+        {
+           "aggs": {
+              "myagg": {
+                 "terms": {
+                    "field": "tag"
+                 }
+              }
+           }
+        }
+        */
 
         private static void Aggregations(this IElasticClient client)
         {
@@ -147,6 +159,43 @@ namespace ElasticLabs
             }
             Continue();
         }
+
+        /*
+        POST /pase,go1/Organization/_search
+        {
+           "aggs": {
+              "applicationid_filter": {
+                 "filter": {
+                    "bool": {
+                       "should": [
+                          {
+                             "term": {
+                                "applicationid": {
+                                   "value": 102
+                                }
+                             }
+                          },
+                          {
+                             "term": {
+                                "applicationid": {
+                                   "value": 0
+                                }
+                             }
+                          }
+                       ]
+                    }
+                 },
+                 "aggs": {
+                    "myagg": {
+                       "terms": {
+                          "field": "tag"
+                       }
+                    }
+                 }
+              }
+           }
+        }
+        */
 
         private static void FilteredAggregations(this IElasticClient client)
         {
