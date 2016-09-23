@@ -25,17 +25,6 @@ namespace ElasticLabs
             searchResponse = client.TermQuery();
             WriteResults(searchResponse, nameof(TermQuery));
 
-            searchResponse = client.FreetextSearch();
-            WriteResults(searchResponse, nameof(FreetextSearch));
-
-            searchResponse = client.FreetextSearchNGram();
-            WriteResults(searchResponse, nameof(FreetextSearchNGram));
-
-            searchResponse = client.CombineQueies();
-            WriteResults(searchResponse, nameof(CombineQueies));
-
-            client.Aggregations();
-            client.FilteredAggregations();
         }
 
         private static ISearchResponse<SearchDocument> YouKnowForSearch(this IElasticClient client)
@@ -80,108 +69,6 @@ namespace ElasticLabs
                     .Type("Organization")
                     .Index(Indices.Index("pase", "go1")));
         }
-
-        private static ISearchResponse<SearchDocument> FreetextSearch(this IElasticClient client)
-        {
-            return client.Search<SearchDocument>(s => s
-                .Query(q => q.Match(t => t.Field("freetext").Query("lundalogik")))
-                .Index(Indices.Index("pase", "go1"))
-                .Type("Organization"));
-        }
-
-        private static ISearchResponse<SearchDocument> FreetextSearchNGram(this IElasticClient client)
-        {
-            return client.Search<SearchDocument>(s => s
-                .Query(q => q.Match(t => t.Field("freetext.freetext_edgengram").Query("lunda")))
-                .Index(Indices.Index("pase", "go1"))
-                .Type("Organization"));
-        }
-
-        private static ISearchResponse<SearchDocument> TermQuery(this IElasticClient client)
-        {
-            return client.Search<SearchDocument>(s => s
-                .Query(q => q.Term(t => t.Field("tag").Value("some tag")))
-                .Index(Indices.Index("pase", "go1"))
-                .Type("Organization"));
-        }
-
-        private static ISearchResponse<SearchDocument> CombineQueies(this IElasticClient client)
-        {
-            return client.Search<SearchDocument>(s => s
-                .Index(Indices.Index("pase", "go1"))
-                .Type("Organization")
-                .Query(q => q
-                    .Bool(b => b
-                        .Must(
-                            m => m.Term("tag", "some tag"),
-                            m => m.Match(match => match.Query("lundalogik").Field("freetext")))
-                        .Filter(filter => filter
-                            .Bool(fb => fb
-                                .Should(
-                                    ss => ss.Term("applicationid", 102),
-                                    ss => ss.Term("applicationid", 0)))))));
-        }
-
-        private static void Aggregations(this IElasticClient client)
-        {
-            var searchResult = client.Search<SearchDocument>(s => s
-                .Index(Indices.Index("pase", "go1"))
-                .Type("Organization")
-                .Aggregations(agg => agg.Terms("myagg", terms => terms.Field("tag"))));
-
-            var aggs = searchResult.Aggs.Terms("myagg");
-            var buckets = aggs.Buckets;
-
-            Console.WriteLine("Terms aggregation results");
-
-            var index = 0;
-            Console.WriteLine("Bucket no.\tTerm\t\tCount");
-            foreach (var keyedBucket in buckets)
-            {
-                index++;
-                Console.WriteLine($"{index}\t\t{keyedBucket.Key}\t\t{keyedBucket.DocCount}");
-                if (index < buckets.Count)
-                {
-                    Console.WriteLine("-------------------------------------------------");
-                }
-            }
-            Continue();
-        }
-
-        private static void FilteredAggregations(this IElasticClient client)
-        {
-            var searchResult = client.Search<SearchDocument>(s => s
-                .Index(Indices.Index("pase", "go1"))
-                .Type("Organization")
-                .Aggregations(agg => agg
-                    .Filter("applicationid_filter",
-                        filterAgg => filterAgg
-                            .Filter(appIdFilter => appIdFilter
-                            .Bool(fb => fb
-                                .Should(
-                                    ss => ss.Term("applicationid", 102),
-                                    ss => ss.Term("applicationid", 0))))
-                            .Aggregations(termsagg => termsagg.Terms("myagg", terms => terms.Field("tag"))))));
-
-            var aggs = searchResult.Aggs.Filter("applicationid_filter").Terms("myagg");
-            var buckets = aggs.Buckets;
-
-            Console.WriteLine("Terms aggregation results");
-
-            var index = 0;
-            Console.WriteLine("Bucket no.\tTerm\t\tCount");
-            foreach (var keyedBucket in buckets)
-            {
-                index++;
-                Console.WriteLine($"{index}\t\t{keyedBucket.Key}\t\t{keyedBucket.DocCount}");
-                if (index < buckets.Count)
-                {
-                    Console.WriteLine("-------------------------------------------------");
-                }
-            }
-            Continue();
-        }
-
 
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
